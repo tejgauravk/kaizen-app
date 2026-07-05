@@ -1,0 +1,466 @@
+/* =========================================================================
+   app.js
+   Phase 2 — Build UI: page navigation, form wiring, and the in-memory
+   hand-off of a draft Kaizen from "New Kaizen" to "Edit Kaizen".
+
+   Persistence (storage.js / register.js / settings.js) and real Word
+   export (export.js) and AI (ai.js) are stubbed for now and will be
+   filled in during Phases 3–5. This file only depends on the small
+   stub APIs those modules already expose, so nothing here should need
+   to change when the stubs become real implementations.
+   ========================================================================= */
+
+(function () {
+  "use strict";
+
+  const PAGES = ["home", "new-kaizen", "edit-kaizen", "register", "ai", "settings"];
+
+  /** Holds the Kaizen currently open in the Edit screen (draft or saved). */
+  let currentKaizen = null;
+
+  // ------------------------------------------------------------------
+  // Navigation
+  // ------------------------------------------------------------------
+
+  function showPage(pageId) {
+    if (!PAGES.includes(pageId)) pageId = "home";
+
+    PAGES.forEach((id) => {
+      const el = document.getElementById("page-" + id);
+      if (el) el.classList.toggle("d-none", id !== pageId);
+    });
+
+    document.querySelectorAll(".navbar-nav .nav-link").forEach((link) => {
+      link.classList.toggle("active", link.dataset.nav === pageId);
+    });
+
+    if (pageId === "register") {
+      Register.render();
+    }
+    if (pageId === "settings") {
+      Settings.populateForm();
+    }
+    if (pageId === "new-kaizen") {
+      prefillNewKaizenFromDefaults();
+      renderColleagueCheckboxes();
+      const banner = document.getElementById("nkNoApiKeyWarning");
+      banner.classList.toggle("d-none", AI.isConfigured());
+    }
+    if (pageId === "ai") {
+      document.getElementById("aiNoApiKeyWarning").classList.toggle("d-none", AI.isConfigured());
+    }
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function wireNavigation() {
+    document.querySelectorAll("[data-nav]").forEach((el) => {
+      el.addEventListener("click", (e) => {
+        e.preventDefault();
+        showPage(el.dataset.nav);
+      });
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Toasts
+  // ------------------------------------------------------------------
+
+  function showToast(message, variant) {
+    // Defensive on purpose: this is a "fire and forget" notification. If it
+    // throws (e.g. Bootstrap hasn't finished loading from its CDN yet),
+    // that must never break the caller's own logic that runs after it —
+    // callers often do real work (like refreshing data) right after
+    // showing a toast, and a UI notification failing is not a reason for
+    // that work to silently never happen.
+    try {
+      variant = variant || "primary";
+      const host = document.getElementById("toastHost");
+      const toastEl = document.createElement("div");
+      toastEl.className = "toast align-items-center text-bg-" + variant + " border-0";
+      toastEl.setAttribute("role", "alert");
+      toastEl.innerHTML =
+        '<div class="d-flex">' +
+        '<div class="toast-body">' + message + "</div>" +
+        '<button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>' +
+        "</div>";
+      host.appendChild(toastEl);
+      const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+      toast.show();
+      toastEl.addEventListener("hidden.bs.toast", () => toastEl.remove());
+    } catch (err) {
+      console.error("showToast failed (message was: " + message + "):", err);
+    }
+  }
+  window.showToast = showToast;
+
+  // ------------------------------------------------------------------
+  // New Kaizen -> AI stub -> Edit Kaizen hand-off
+  // ------------------------------------------------------------------
+
+  function prefillNewKaizenFromDefaults() {
+    const defaults = Settings.getDefaults();
+    if (!defaults) return;
+    setValueIfEmpty("nkName", defaults.name);
+    setValueIfEmpty("nkDepartment", defaults.department);
+    setValueIfEmpty("nkDepot", defaults.depot);
+    if (!document.getElementById("nkMonth").value) {
+      document.getElementById("nkMonth").value = currentMonthLabel();
+    }
+  }
+
+  function setValueIfEmpty(id, value) {
+    const el = document.getElementById(id);
+    if (el && !el.value && value) el.value = value;
+  }
+
+  function currentMonthLabel() {
+    return new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  }
+
+  /** Rebuilds the "Colleagues involved" checkboxes from Settings' current roster. */
+  function renderColleagueCheckboxes() {
+    const host = document.getElementById("nkColleagueCheckboxes");
+    const colleagues = Settings.getColleagues();
+
+    if (colleagues.length === 0) {
+      host.innerHTML = '<div class="text-muted small">No colleagues added yet — add them in <a href="#" id="nkGoToSettingsLink">Settings</a>.</div>';
+      document.getElementById("nkGoToSettingsLink").addEventListener("click", (e) => {
+        e.preventDefault();
+        showPage("settings");
+      });
+      return;
+    }
+
+    host.innerHTML = colleagues
+      .map((name, i) => {
+        const id = "nkColleague" + i;
+        return (
+          '<div class="form-check"><input class="form-check-input" type="checkbox" value="' +
+          name.replace(/"/g, "&quot;") + '" id="' + id + '">' +
+          '<label class="form-check-label" for="' + id + '">' + name + "</label></div>"
+        );
+      })
+      .join("");
+  }
+
+  /** Merges ticked colleague checkboxes into the free-typed Name(s) value, without duplicating. */
+  function combineNamesWithColleagues(freeTypedNames) {
+    const existing = freeTypedNames.split(",").map((s) => s.trim()).filter(Boolean);
+    const checked = Array.from(document.querySelectorAll("#nkColleagueCheckboxes input:checked")).map((cb) => cb.value);
+    checked.forEach((name) => {
+      if (!existing.some((e) => e.toLowerCase() === name.toLowerCase())) existing.push(name);
+    });
+    return existing.join(", ");
+  }
+
+  /** Puts a button into/out of a disabled "working" state with a temporary label. */
+  function setButtonBusy(btn, busy, busyLabel) {
+    if (busy) {
+      btn.dataset.originalLabel = btn.dataset.originalLabel || btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span>' + busyLabel;
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.originalLabel) btn.innerHTML = btn.dataset.originalLabel;
+    }
+  }
+
+  function wireNewKaizenForm() {
+    const form = document.getElementById("newKaizenForm");
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const actionTaken = document.getElementById("nkActionTaken").value.trim();
+      if (!actionTaken) {
+        form.classList.add("was-validated");
+        document.getElementById("nkActionTaken").focus();
+        return;
+      }
+
+      const meta = {
+        name: combineNamesWithColleagues(document.getElementById("nkName").value.trim()),
+        department: document.getElementById("nkDepartment").value.trim(),
+        month: document.getElementById("nkMonth").value.trim() || currentMonthLabel(),
+        depot: document.getElementById("nkDepot").value.trim(),
+      };
+
+      const submitBtn = form.querySelector('button[type="submit"]');
+      const usingAI = AI.isConfigured();
+      setButtonBusy(submitBtn, true, usingAI ? "Asking Claude…" : "Drafting…");
+
+      AI.generateKaizen(actionTaken, meta)
+        .then((generated) => {
+          currentKaizen = Object.assign(
+            { id: null, createdDate: new Date().toISOString() },
+            meta,
+            generated
+          );
+          loadKaizenIntoEditForm(currentKaizen);
+          form.reset();
+          form.classList.remove("was-validated");
+          showPage("edit-kaizen");
+          showToast(
+            usingAI ? "Generated with Claude." : "Offline draft created — fill in the bracketed prompts, or add an API key in Settings for AI writing.",
+            usingAI ? "success" : "info"
+          );
+        })
+        .catch((err) => {
+          showToast(err.message, "danger");
+        })
+        .finally(() => {
+          setButtonBusy(submitBtn, false);
+        });
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Edit Kaizen screen
+  // ------------------------------------------------------------------
+
+  /** Opens an existing (saved) Kaizen in the Edit screen. Used by register.js. */
+  function openKaizenForEdit(k) {
+    currentKaizen = k;
+    loadKaizenIntoEditForm(k);
+    showPage("edit-kaizen");
+  }
+
+  /** Accepts either the old single-string format or the new array format, always returns an array. */
+  function toAreaArray(value) {
+    if (Array.isArray(value)) return value;
+    if (value) return [value];
+    return [];
+  }
+
+  function setCheckedValues(groupId, values) {
+    const set = new Set(values || []);
+    document.querySelectorAll("#" + groupId + " input[type=checkbox]").forEach((cb) => {
+      cb.checked = set.has(cb.value);
+    });
+  }
+
+  function getCheckedValues(groupId) {
+    return Array.from(document.querySelectorAll("#" + groupId + " input[type=checkbox]:checked")).map((cb) => cb.value);
+  }
+
+  function loadKaizenIntoEditForm(k) {
+    document.getElementById("ekId").value = k.id || "";
+    document.getElementById("ekTitle").value = k.title || "";
+    document.getElementById("ekBefore").value = k.before || "";
+    document.getElementById("ekProblem").value = k.problem || "";
+    document.getElementById("ekActionTaken").value = k.improvedActionTaken || k.actionTaken || "";
+    document.getElementById("ekAfter").value = k.after || "";
+    document.getElementById("ekBenefits").value = k.benefits || "";
+    setCheckedValues("ekWorkAreaGroup", toAreaArray(k.workArea));
+    setCheckedValues("ekTqmAreaGroup", toAreaArray(k.tqmArea));
+    document.getElementById("ekName").value = k.name || "";
+    document.getElementById("ekDepartment").value = k.department || "";
+    document.getElementById("ekMonth").value = k.month || "";
+    document.getElementById("ekDepot").value = k.depot || "";
+  }
+
+  function readKaizenFromEditForm() {
+    return {
+      id: document.getElementById("ekId").value || null,
+      title: document.getElementById("ekTitle").value.trim(),
+      before: document.getElementById("ekBefore").value.trim(),
+      problem: document.getElementById("ekProblem").value.trim(),
+      actionTaken: document.getElementById("ekActionTaken").value.trim(),
+      after: document.getElementById("ekAfter").value.trim(),
+      benefits: document.getElementById("ekBenefits").value.trim(),
+      workArea: getCheckedValues("ekWorkAreaGroup"),
+      tqmArea: getCheckedValues("ekTqmAreaGroup"),
+      name: document.getElementById("ekName").value.trim(),
+      department: document.getElementById("ekDepartment").value.trim(),
+      month: document.getElementById("ekMonth").value.trim(),
+      depot: document.getElementById("ekDepot").value.trim(),
+      createdDate: (currentKaizen && currentKaizen.createdDate) || new Date().toISOString(),
+    };
+  }
+
+  function wireEditKaizenButtons() {
+    const improveBtn = document.getElementById("btnImproveAI");
+    improveBtn.addEventListener("click", () => {
+      const draft = readKaizenFromEditForm();
+      const usingAI = AI.isConfigured();
+      setButtonBusy(improveBtn, true, usingAI ? "Improving…" : "Tidying…");
+      AI.improveKaizen(draft)
+        .then((improved) => {
+          loadKaizenIntoEditForm(Object.assign(draft, improved));
+          showToast(
+            usingAI ? "AI suggestions applied." : "Basic offline cleanup applied — add an API key in Settings for real AI improvement.",
+            usingAI ? "success" : "info"
+          );
+        })
+        .catch((err) => showToast(err.message, "danger"))
+        .finally(() => setButtonBusy(improveBtn, false));
+    });
+
+    document.getElementById("btnSaveKaizen").addEventListener("click", () => {
+      const form = document.getElementById("editKaizenForm");
+      if (!document.getElementById("ekActionTaken").value.trim()) {
+        form.classList.add("was-validated");
+        document.getElementById("ekActionTaken").focus();
+        return;
+      }
+      const kaizen = readKaizenFromEditForm();
+      Storage.saveKaizen(kaizen)
+        .then((id) => {
+          kaizen.id = id;
+          currentKaizen = kaizen;
+          document.getElementById("ekId").value = id;
+          showToast("Kaizen saved to the Register.", "success");
+        })
+        .catch((err) => showToast(err.message, "danger"));
+    });
+
+    document.getElementById("btnExportWord").addEventListener("click", () => {
+      const kaizen = readKaizenFromEditForm();
+      Export.exportKaizenToWord(kaizen);
+    });
+
+    document.getElementById("btnPrintKaizen").addEventListener("click", () => {
+      window.print();
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Settings screen
+  // ------------------------------------------------------------------
+
+  function wireSettingsForm() {
+    document.getElementById("settingsForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const defaults = {
+        name: document.getElementById("stName").value.trim(),
+        department: document.getElementById("stDepartment").value.trim(),
+        depot: document.getElementById("stDepot").value.trim(),
+        company: document.getElementById("stCompany").value.trim(),
+        apiKey: document.getElementById("stApiKey").value.trim(),
+        aiModel: document.getElementById("stAiModel").value,
+      };
+      Settings.saveDefaults(defaults);
+      showToast("Defaults saved.", "success");
+    });
+
+    function addColleagueFromInput() {
+      const input = document.getElementById("stNewColleague");
+      const name = input.value.trim();
+      if (!name) return;
+      Settings.addColleague(name).then(() => {
+        Settings.renderColleagueList();
+        input.value = "";
+        input.focus();
+      });
+    }
+
+    document.getElementById("btnAddColleague").addEventListener("click", addColleagueFromInput);
+    document.getElementById("stNewColleague").addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addColleagueFromInput();
+      }
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // AI Suggestion Centre — paste-text analysis (file upload not yet wired)
+  // ------------------------------------------------------------------
+
+  function renderSuggestions(suggestions) {
+    const host = document.getElementById("aiSuggestionResults");
+    host.innerHTML = "";
+
+    if (suggestions.length === 0) {
+      host.innerHTML = '<div class="text-muted">No clear Kaizen opportunities found in that text — try pasting something more specific.</div>';
+      return;
+    }
+
+    suggestions.forEach((s) => {
+      const card = document.createElement("div");
+      card.className = "suggestion-card";
+      card.innerHTML =
+        "<h3>" + escapeHtml(s.title || "Untitled idea") + "</h3>" +
+        "<p>" + escapeHtml(s.summary) + "</p>" +
+        '<button type="button" class="btn btn-sm btn-app-primary">➕ Start This Kaizen</button>';
+      card.querySelector("button").addEventListener("click", () => {
+        showPage("new-kaizen");
+        document.getElementById("nkActionTaken").value = s.suggestedActionTaken || s.title || "";
+      });
+      host.appendChild(card);
+    });
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement("div");
+    div.textContent = str || "";
+    return div.innerHTML;
+  }
+
+  function wireAiSuggestionCentre() {
+    const fileInput = document.getElementById("aiFileUpload");
+    const fileList = document.getElementById("aiFileList");
+
+    fileInput.addEventListener("change", () => {
+      fileList.innerHTML = "";
+      Array.from(fileInput.files).forEach((file) => {
+        const row = document.createElement("div");
+        row.className = "small text-muted";
+        row.textContent = "📎 " + file.name + " (" + Math.round(file.size / 1024) + " KB) — not analysed yet, paste its text above instead.";
+        fileList.appendChild(row);
+      });
+    });
+
+    const analyzeBtn = document.getElementById("btnAnalyze");
+    analyzeBtn.addEventListener("click", () => {
+      const text = document.getElementById("aiPasteArea").value.trim();
+      if (!text) {
+        showToast("Paste some text first — notes, an SOP excerpt, an email thread, anything relevant.", "warning");
+        return;
+      }
+      setButtonBusy(analyzeBtn, true, "Analysing…");
+      document.getElementById("aiSuggestionResults").innerHTML = "";
+      AI.suggestKaizens(text)
+        .then((suggestions) => renderSuggestions(suggestions))
+        .catch((err) => showToast(err.message, "danger"))
+        .finally(() => setButtonBusy(analyzeBtn, false));
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Init
+  // ------------------------------------------------------------------
+
+  function registerServiceWorker() {
+    // Service workers require a secure context (HTTPS or localhost) — browsers
+    // refuse registration on file://, so this is a silent no-op there, by design.
+    if ("serviceWorker" in navigator && window.isSecureContext) {
+      navigator.serviceWorker.register("service-worker.js").catch((err) => {
+        console.warn("Service worker registration failed:", err);
+      });
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    wireNavigation();
+    wireNewKaizenForm();
+    wireEditKaizenButtons();
+    wireSettingsForm();
+    wireAiSuggestionCentre();
+    registerServiceWorker();
+
+    Storage.init()
+      .then(() => Settings.load())
+      .then(() => showPage("home"))
+      .catch((err) => {
+        console.error(err);
+        showPage("home");
+        showToast("Local storage could not be started: " + err.message, "danger");
+      });
+  });
+
+  // Small surface other modules (register.js) call into.
+  window.App = {
+    openKaizenForEdit: openKaizenForEdit,
+  };
+})();

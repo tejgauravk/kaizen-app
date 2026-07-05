@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kaizen Management System | GCMMF Ltd.</title>
+
+<!-- PWA: installable + offline support (only takes effect when served over HTTPS, not file://) -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0a3a66">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Kaizen">
+
+<!-- Bootstrap 5 (CDN — see README for offline/vendoring notes) -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ============================= NAVBAR ============================= -->
+<nav class="navbar navbar-expand-lg navbar-dark app-navbar sticky-top">
+  <div class="container-fluid px-3 px-lg-4">
+    <a class="navbar-brand app-brand" href="#" data-nav="home">
+      <span class="app-brand-mark">仝</span>
+      Kaizen Management System
+      <span class="app-brand-sub d-none d-md-inline">GCMMF Ltd.</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#appNav">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+    <div class="collapse navbar-collapse" id="appNav">
+      <ul class="navbar-nav ms-auto">
+        <li class="nav-item"><a class="nav-link" href="#" data-nav="home">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-nav="new-kaizen">New Kaizen</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-nav="register">Kaizen Register</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-nav="ai">AI Suggestions</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-nav="settings">Settings</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================= TOASTS ============================= -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" id="toastHost"></div>
+
+<main class="container app-main py-4">
+
+  <!-- ========================= HOME ========================= -->
+  <section id="page-home" class="app-page">
+    <div class="page-header">
+      <h1>Welcome back<span id="homeUserName"></span></h1>
+      <p class="text-muted">What would you like to do today?</p>
+    </div>
+
+    <div class="row g-3 g-lg-4 home-cards">
+      <div class="col-6 col-lg-3">
+        <button class="home-card w-100" data-nav="new-kaizen">
+          <span class="home-card-icon">➕</span>
+          <span class="home-card-title">New Kaizen</span>
+          <span class="home-card-desc">Record a fresh improvement</span>
+        </button>
+      </div>
+      <div class="col-6 col-lg-3">
+        <button class="home-card w-100" data-nav="register">
+          <span class="home-card-icon">📚</span>
+          <span class="home-card-title">Kaizen Register</span>
+          <span class="home-card-desc">Browse, edit & export past entries</span>
+        </button>
+      </div>
+      <div class="col-6 col-lg-3">
+        <button class="home-card w-100" data-nav="ai">
+          <span class="home-card-icon">💡</span>
+          <span class="home-card-title">AI Suggestions</span>
+          <span class="home-card-desc">Turn documents into Kaizen ideas</span>
+        </button>
+      </div>
+      <div class="col-6 col-lg-3">
+        <button class="home-card w-100" data-nav="settings">
+          <span class="home-card-icon">⚙</span>
+          <span class="home-card-title">Settings</span>
+          <span class="home-card-desc">Set your default details</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= NEW KAIZEN ========================= -->
+  <section id="page-new-kaizen" class="app-page d-none">
+    <div class="page-header">
+      <h1>New Kaizen</h1>
+      <p class="text-muted">Describe the action you took — everything else can be generated or filled in after.</p>
+    </div>
+
+    <div class="alert alert-info d-none" id="nkNoApiKeyWarning" role="alert">
+      Using offline drafting mode (no writing by Claude yet — just a structured starting skeleton).
+      <a href="#" data-nav="settings">Add a Claude API key in Settings</a> anytime for full AI-generated content.
+    </div>
+
+    <div class="panel-card">
+      <form id="newKaizenForm" novalidate>
+        <div class="mb-3">
+          <label class="form-label required-label" for="nkActionTaken">Action Taken</label>
+          <textarea class="form-control" id="nkActionTaken" rows="5" required
+            placeholder="Describe, in your own words, what you did to improve the process..."></textarea>
+          <div class="invalid-feedback">Action Taken is required before a Kaizen can be generated.</div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label" for="nkName">Name(s)</label>
+            <input type="text" class="form-control" id="nkName" placeholder="Your name">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label" for="nkDepartment">Department</label>
+            <input type="text" class="form-control" id="nkDepartment" placeholder="e.g. Mktg / PMG / Export">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label" for="nkMonth">Month</label>
+            <input type="text" class="form-control" id="nkMonth" placeholder="e.g. July 2026">
+          </div>
+          <div class="col-md-6 col-lg-3">
+            <label class="form-label" for="nkDepot">Depot</label>
+            <input type="text" class="form-control" id="nkDepot" placeholder="e.g. HO">
+          </div>
+        </div>
+
+        <div class="mb-1 mt-3" id="nkColleagueSection">
+          <label class="form-label">Colleagues involved <span class="text-muted fw-normal">(optional — tick to add their names above)</span></label>
+          <div class="checkbox-group" id="nkColleagueCheckboxes">
+            <!-- populated from Settings' colleague roster -->
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-end gap-2 mt-4">
+          <button type="button" class="btn btn-outline-secondary" data-nav="home">Cancel</button>
+          <button type="submit" class="btn btn-app-primary">✨ Generate Kaizen</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ========================= EDIT KAIZEN ========================= -->
+  <section id="page-edit-kaizen" class="app-page d-none">
+    <div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+      <div>
+        <h1>Edit Kaizen</h1>
+        <p class="text-muted">Every field stays editable — refine as much as you like before saving.</p>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-outline-primary" id="btnImproveAI">🤖 Improve with AI</button>
+        <button type="button" class="btn btn-app-primary" id="btnSaveKaizen">💾 Save</button>
+        <button type="button" class="btn btn-outline-success" id="btnExportWord">⬇ Export to Word</button>
+        <button type="button" class="btn btn-outline-secondary" id="btnPrintKaizen">🖨 Print</button>
+      </div>
+    </div>
+
+    <form id="editKaizenForm" class="panel-card">
+      <input type="hidden" id="ekId">
+
+      <div class="mb-3">
+        <label class="form-label" for="ekTitle">Title</label>
+        <input type="text" class="form-control fs-5 fw-semibold" id="ekTitle" placeholder="Short, descriptive title for the register">
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="ekBefore">Before</label>
+          <textarea class="form-control" id="ekBefore" rows="4"></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ekProblem">Problem</label>
+          <textarea class="form-control" id="ekProblem" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="mb-3 mt-3">
+        <label class="form-label required-label" for="ekActionTaken">Action Taken</label>
+        <textarea class="form-control" id="ekActionTaken" rows="4" required></textarea>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label" for="ekAfter">After</label>
+          <textarea class="form-control" id="ekAfter" rows="4"></textarea>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label" for="ekBenefits">Benefits</label>
+          <textarea class="form-control" id="ekBenefits" rows="4"></textarea>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-md-6">
+          <label class="form-label">Work Area <span class="text-muted fw-normal">(check all that apply)</span></label>
+          <div class="checkbox-group" id="ekWorkAreaGroup">
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="1. Facility Improvement" id="wa1"><label class="form-check-label" for="wa1">1. Facility Improvement</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="2. System Improvement" id="wa2"><label class="form-check-label" for="wa2">2. System Improvement</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="3. Process Improvement" id="wa3"><label class="form-check-label" for="wa3">3. Process Improvement</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="4. Customer Satisfaction" id="wa4"><label class="form-check-label" for="wa4">4. Customer Satisfaction</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="5. User Improvement" id="wa5"><label class="form-check-label" for="wa5">5. User Improvement</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="6. Cost saving" id="wa6"><label class="form-check-label" for="wa6">6. Cost saving</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="7. Co-ordination" id="wa7"><label class="form-check-label" for="wa7">7. Co-ordination</label></div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label">TQM Area <span class="text-muted fw-normal">(check all that apply)</span></label>
+          <div class="checkbox-group" id="ekTqmAreaGroup">
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="1. House Keeping (HK)" id="tq1"><label class="form-check-label" for="tq1">1. House Keeping (HK)</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="2. Learning (L)" id="tq2"><label class="form-check-label" for="tq2">2. Learning (L)</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="3. Development" id="tq3"><label class="form-check-label" for="tq3">3. Development</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="4. Communication" id="tq4"><label class="form-check-label" for="tq4">4. Communication</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="5. Computerization (Comp)" id="tq5"><label class="form-check-label" for="tq5">5. Computerization (Comp)</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="6. Human Relations (HR)" id="tq6"><label class="form-check-label" for="tq6">6. Human Relations (HR)</label></div>
+            <div class="form-check"><input class="form-check-input" type="checkbox" value="7. Quality improvement" id="tq7"><label class="form-check-label" for="tq7">7. Quality improvement</label></div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <div class="row g-3">
+        <div class="col-md-6 col-lg-3">
+          <label class="form-label" for="ekName">Name(s)</label>
+          <input type="text" class="form-control" id="ekName">
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <label class="form-label" for="ekDepartment">Department</label>
+          <input type="text" class="form-control" id="ekDepartment">
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <label class="form-label" for="ekMonth">Month</label>
+          <input type="text" class="form-control" id="ekMonth">
+        </div>
+        <div class="col-md-6 col-lg-3">
+          <label class="form-label" for="ekDepot">Depot</label>
+          <input type="text" class="form-control" id="ekDepot">
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- ========================= KAIZEN REGISTER ========================= -->
+  <section id="page-register" class="app-page d-none">
+    <div class="page-header d-flex justify-content-between align-items-start flex-wrap gap-2">
+      <div>
+        <h1>Kaizen Register</h1>
+        <p class="text-muted">Every Kaizen you've saved, in one place.</p>
+      </div>
+      <button class="btn btn-app-primary" data-nav="new-kaizen">➕ New Kaizen</button>
+    </div>
+
+    <div class="panel-card">
+      <div class="row g-2 mb-3">
+        <div class="col-md-8">
+          <input type="search" class="form-control" id="registerSearch" placeholder="Search by title, department, name or month…">
+        </div>
+        <div class="col-md-4 d-flex justify-content-md-end gap-2">
+          <button type="button" class="btn btn-outline-success d-none" id="btnExportSelected">⬇ Export Selected (0)</button>
+          <button type="button" class="btn btn-outline-success w-100 w-md-auto" id="btnExportAll">⬇ Export All to Word</button>
+        </div>
+      </div>
+
+      <div class="table-responsive">
+        <table class="table align-middle app-table" id="registerTable">
+          <thead>
+            <tr>
+              <th style="width:2.5rem;"><input type="checkbox" class="form-check-input" id="registerSelectAll" title="Select all"></th>
+              <th style="width:4.5rem;">Sr. No.</th>
+              <th>Title</th>
+              <th>Department</th>
+              <th>Month</th>
+              <th>Created</th>
+              <th class="text-end">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="registerTableBody">
+            <!-- Populated by register.js -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="empty-state" id="registerEmptyState">
+        <div class="empty-state-icon">📚</div>
+        <p class="mb-1 fw-semibold">No Kaizens recorded yet</p>
+        <p class="text-muted mb-3">Create your first one and it will show up here.</p>
+        <button class="btn btn-app-primary" data-nav="new-kaizen">➕ New Kaizen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= AI SUGGESTION CENTRE ========================= -->
+  <section id="page-ai" class="app-page d-none">
+    <div class="page-header">
+      <h1>AI Suggestion Centre</h1>
+      <p class="text-muted">Feed in raw material — the AI will help turn it into Kaizen-ready ideas.</p>
+    </div>
+
+    <div class="alert alert-warning d-none" id="aiNoApiKeyWarning" role="alert">
+      This feature needs a Claude API key to actually read and analyse your text — there's no offline mode for it.
+      <a href="#" data-nav="settings">Add one in Settings</a> to use it.
+    </div>
+
+    <div class="panel-card">
+      <div class="mb-4">
+        <label class="form-label" for="aiPasteArea">Paste text</label>
+        <textarea class="form-control" id="aiPasteArea" rows="6"
+          placeholder="Paste notes, meeting minutes, an SOP excerpt, an email thread — anything relevant…"></textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label" for="aiFileUpload">Or upload documents</label>
+        <input class="form-control" type="file" id="aiFileUpload" multiple
+          accept=".xlsx,.xls,.doc,.docx,.ppt,.pptx,.pdf,.txt,.eml,.msg">
+        <div class="form-text">Supported (coming in a future update): Excel, Word, PowerPoint, PDF, Claude conversation exports, emails, marketing plans, SOPs. For now, paste the text directly above instead.</div>
+      </div>
+
+      <div class="source-chips mb-4" aria-hidden="true">
+        <span class="chip">Excel</span>
+        <span class="chip">Word</span>
+        <span class="chip">PowerPoint</span>
+        <span class="chip">PDF</span>
+        <span class="chip">Claude conversations</span>
+        <span class="chip">Emails</span>
+        <span class="chip">Marketing plans</span>
+        <span class="chip">SOPs</span>
+      </div>
+
+      <div id="aiFileList" class="mb-3"></div>
+
+      <button type="button" class="btn btn-app-primary" id="btnAnalyze">🔍 Analyse & Suggest Kaizens</button>
+    </div>
+
+    <div id="aiSuggestionResults" class="mt-3"></div>
+  </section>
+
+  <!-- ========================= SETTINGS ========================= -->
+  <section id="page-settings" class="app-page d-none">
+    <div class="page-header">
+      <h1>Settings</h1>
+      <p class="text-muted">These defaults automatically pre-fill every new Kaizen you create.</p>
+    </div>
+
+    <div class="panel-card" style="max-width: 640px;">
+      <form id="settingsForm">
+        <div class="mb-3">
+          <label class="form-label" for="stName">Name</label>
+          <input type="text" class="form-control" id="stName">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="stDepartment">Department</label>
+          <input type="text" class="form-control" id="stDepartment">
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="stDepot">Depot</label>
+          <input type="text" class="form-control" id="stDepot">
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="stCompany">Company</label>
+          <input type="text" class="form-control" id="stCompany" value="GCMMF Ltd., Anand">
+        </div>
+
+        <hr class="my-4">
+        <h2 class="h6 fw-bold mb-1">My Team</h2>
+        <p class="text-muted small mb-3">
+          Add colleagues here once, then just tick their names on the New Kaizen screen instead of retyping them.
+        </p>
+        <div class="input-group mb-2">
+          <input type="text" class="form-control" id="stNewColleague" placeholder="Colleague's name">
+          <button type="button" class="btn btn-outline-primary" id="btnAddColleague">➕ Add</button>
+        </div>
+        <div id="colleagueList" class="mb-4"></div>
+
+        <hr class="my-4">
+        <h2 class="h6 fw-bold mb-1">AI Writing Assistant</h2>
+        <p class="text-muted small mb-3">
+          Powers "Generate Kaizen" and "Improve with AI". Get a key at
+          <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a>.
+          It's stored only in this browser and sent directly to Anthropic with each request — never to any
+          server of ours, since this app doesn't have one.
+        </p>
+        <div class="mb-3">
+          <label class="form-label" for="stApiKey">Claude API Key</label>
+          <input type="password" class="form-control" id="stApiKey" placeholder="sk-ant-..." autocomplete="off">
+        </div>
+        <div class="mb-4">
+          <label class="form-label" for="stAiModel">AI Model</label>
+          <select class="form-select" id="stAiModel">
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5 — fastest, cheapest (recommended)</option>
+            <option value="claude-sonnet-5">Claude Sonnet 5 — richer writing, higher cost</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-app-primary">💾 Save Defaults</button>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<footer class="app-footer text-center text-muted py-4">
+  AI Powered Kaizen Management System · GCMMF Ltd. · Runs entirely offline in your browser
+</footer>
+
+<!-- Bootstrap bundle (CDN, with a backup source if the first one fails to load) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  if (typeof bootstrap === "undefined") {
+    document.write('<script src="https://unpkg.com/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"><\/script>');
+  }
+</script>
+
+<!-- docx.js (CDN, with a backup source if the first one fails to load). Exposes window.docx used by export.js. -->
+<script src="https://cdn.jsdelivr.net/npm/docx@9.6.1/dist/index.umd.cjs"></script>
+<script>
+  if (typeof docx === "undefined") {
+    document.write('<script src="https://unpkg.com/docx@9.6.1/dist/index.umd.cjs"><\/script>');
+  }
+</script>
+
+<!-- App modules -->
+<script src="storage.js"></script>
+<script src="settings.js"></script>
+<script src="register.js"></script>
+<script src="ai.js"></script>
+<script src="export.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

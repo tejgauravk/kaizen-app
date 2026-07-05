@@ -1,0 +1,322 @@
+/* =========================================================================
+   Kaizen Management System — Stylesheet
+   Theme: professional blue & white, rounded cards, minimal decoration.
+   ========================================================================= */
+
+:root {
+  --blue-900: #0a3a66;
+  --blue-700: #0e4f8f;
+  --blue-600: #1266b3;
+  --blue-500: #1c7bd1;
+  --blue-100: #e7f1fb;
+  --blue-50:  #f3f8fd;
+
+  --ink-900: #16232e;
+  --ink-600: #4a5b6b;
+  --ink-400: #7c8a97;
+
+  --border: #dfe7ee;
+  --bg: #f2f6fa;
+  --card-bg: #ffffff;
+
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --radius-sm: 8px;
+
+  --shadow-sm: 0 1px 2px rgba(16, 40, 68, 0.06), 0 1px 1px rgba(16, 40, 68, 0.04);
+  --shadow-md: 0 10px 24px rgba(16, 40, 68, 0.10);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--ink-900);
+  font-family: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  min-height: 100vh;
+}
+
+/* ---------------------------- Navbar ---------------------------- */
+
+.app-navbar {
+  background: linear-gradient(135deg, var(--blue-900) 0%, var(--blue-700) 100%);
+  box-shadow: var(--shadow-sm);
+}
+
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  color: #fff !important;
+}
+
+.app-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.15);
+  font-weight: 700;
+}
+
+.app-brand-sub {
+  font-weight: 400;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.7);
+  border-left: 1px solid rgba(255, 255, 255, 0.3);
+  padding-left: 0.6rem;
+  margin-left: 0.2rem;
+}
+
+.navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 500;
+  padding: 0.5rem 0.9rem;
+  border-radius: var(--radius-sm);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.navbar-nav .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.navbar-nav .nav-link.active {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ---------------------------- Layout ---------------------------- */
+
+.app-main { max-width: 1140px; }
+
+.page-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--blue-900);
+  margin-bottom: 0.15rem;
+}
+
+.app-page { animation: fadeIn 0.18s ease; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.panel-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 1.75rem;
+  margin-top: 1.25rem;
+}
+
+/* ---------------------------- Home cards ---------------------------- */
+
+.home-cards { margin-top: 1.5rem; }
+
+.home-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: 2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.home-card:hover,
+.home-card:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--blue-500);
+  outline: none;
+}
+
+.home-card-icon {
+  display: block;
+  font-size: 2.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.home-card-title {
+  display: block;
+  font-weight: 700;
+  color: var(--blue-900);
+  font-size: 1.02rem;
+}
+
+.home-card-desc {
+  display: block;
+  color: var(--ink-400);
+  font-size: 0.82rem;
+  margin-top: 0.2rem;
+}
+
+/* ---------------------------- Forms ---------------------------- */
+
+.form-label {
+  font-weight: 600;
+  color: var(--ink-600);
+  font-size: 0.88rem;
+}
+
+.required-label::after {
+  content: " *";
+  color: #c0392b;
+}
+
+.form-control, .form-select {
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.checkbox-group {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem 1rem;
+  background: var(--blue-50);
+}
+
+.checkbox-group .form-check {
+  margin-bottom: 0.35rem;
+}
+
+.checkbox-group .form-check:last-child {
+  margin-bottom: 0;
+}
+
+.colleague-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 0.4rem;
+  background: #fff;
+}
+
+.colleague-row .btn {
+  padding: 0 0.25rem;
+  line-height: 1;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--blue-500);
+  box-shadow: 0 0 0 0.2rem rgba(28, 123, 209, 0.15);
+}
+
+.btn-app-primary {
+  background: var(--blue-600);
+  border-color: var(--blue-600);
+  color: #fff;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.btn-app-primary:hover {
+  background: var(--blue-700);
+  border-color: var(--blue-700);
+  color: #fff;
+}
+
+.btn-outline-primary, .btn-outline-secondary, .btn-outline-success {
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+}
+
+/* ---------------------------- Register table ---------------------------- */
+
+.app-table thead th {
+  color: var(--ink-600);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-bottom: 2px solid var(--border);
+  white-space: nowrap;
+}
+
+.app-table td {
+  vertical-align: middle;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-table tbody tr:hover { background: var(--blue-50); }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+.empty-state-icon {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+  opacity: 0.6;
+}
+
+/* ---------------------------- AI Suggestion chips ---------------------------- */
+
+.source-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+
+.chip {
+  background: var(--blue-100);
+  color: var(--blue-700);
+  border-radius: 999px;
+  padding: 0.3rem 0.85rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.suggestion-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--blue-500);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 0.9rem;
+}
+
+.suggestion-card h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--blue-900);
+  margin-bottom: 0.35rem;
+}
+
+.suggestion-card p {
+  font-size: 0.9rem;
+  color: var(--ink-600);
+  margin-bottom: 0.6rem;
+}
+
+/* ---------------------------- Footer ---------------------------- */
+
+.app-footer {
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+}
+
+/* ---------------------------- Utility ---------------------------- */
+
+.d-none { display: none !important; }
+
+/* ---------------------------- Print ---------------------------- */
+
+@media print {
+  .app-navbar, .app-footer, #toastHost,
+  #btnImproveAI, #btnSaveKaizen, #btnExportWord, #btnPrintKaizen {
+    display: none !important;
+  }
+  body { background: #fff; }
+  .panel-card { box-shadow: none; border: none; padding: 0; }
+}

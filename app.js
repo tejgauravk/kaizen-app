@@ -367,28 +367,97 @@
   // AI Suggestion Centre — paste-text analysis (file upload not yet wired)
   // ------------------------------------------------------------------
 
+  /** Suggestions from the last analysis, kept so the batch-create button can look up full details by index. */
+  let currentSuggestions = [];
+
   function renderSuggestions(suggestions) {
+    currentSuggestions = suggestions;
     const host = document.getElementById("aiSuggestionResults");
     host.innerHTML = "";
 
     if (suggestions.length === 0) {
       host.innerHTML = '<div class="text-muted">No clear Kaizen opportunities found in that text — try pasting something more specific.</div>';
+      document.getElementById("aiBatchBar").classList.add("d-none");
       return;
     }
 
-    suggestions.forEach((s) => {
+    suggestions.forEach((s, i) => {
       const card = document.createElement("div");
       card.className = "suggestion-card";
       card.innerHTML =
-        "<h3>" + escapeHtml(s.title || "Untitled idea") + "</h3>" +
+        '<div class="form-check mb-2">' +
+        '<input class="form-check-input suggestion-check" type="checkbox" checked id="sugCheck' + i + '">' +
+        '<label class="form-check-label fw-bold" for="sugCheck' + i + '" style="color:var(--blue-900);">' + escapeHtml(s.title || "Untitled idea") + "</label>" +
+        "</div>" +
         "<p>" + escapeHtml(s.summary) + "</p>" +
-        '<button type="button" class="btn btn-sm btn-app-primary">➕ Start This Kaizen</button>';
+        '<button type="button" class="btn btn-sm btn-outline-primary">✏️ Review This One Individually</button>';
+      card.querySelector("input[type=checkbox]").addEventListener("change", updateBatchBar);
       card.querySelector("button").addEventListener("click", () => {
         showPage("new-kaizen");
         document.getElementById("nkActionTaken").value = s.suggestedActionTaken || s.title || "";
       });
       host.appendChild(card);
     });
+
+    updateBatchBar();
+  }
+
+  function updateBatchBar() {
+    const bar = document.getElementById("aiBatchBar");
+    const checked = document.querySelectorAll("#aiSuggestionResults .suggestion-check:checked").length;
+    if (checked === 0) {
+      bar.classList.add("d-none");
+      return;
+    }
+    bar.classList.remove("d-none");
+    document.getElementById("aiBatchCount").textContent = checked + " of " + currentSuggestions.length + " selected";
+    document.getElementById("btnCreateSelected").textContent = "✅ Create Selected Kaizens (" + checked + ")";
+  }
+
+  function createSelectedKaizens() {
+    const checkedIndexes = Array.from(document.querySelectorAll("#aiSuggestionResults .suggestion-check:checked"))
+      .map((cb) => Number(cb.id.replace("sugCheck", "")));
+    const toCreate = checkedIndexes.map((i) => currentSuggestions[i]);
+    if (toCreate.length === 0) return;
+
+    const defaults = Settings.getDefaults();
+    const meta = {
+      name: defaults.name || "",
+      department: defaults.department || "",
+      month: currentMonthLabel(),
+      depot: defaults.depot || "",
+    };
+
+    const btn = document.getElementById("btnCreateSelected");
+    btn.disabled = true;
+    let created = 0;
+    let failed = 0;
+
+    function next(index) {
+      if (index >= toCreate.length) {
+        btn.disabled = false;
+        showToast(
+          "Created " + created + " of " + toCreate.length + " Kaizens." + (failed ? " " + failed + " failed — check the Register." : ""),
+          failed ? "warning" : "success"
+        );
+        showPage("register");
+        return;
+      }
+
+      const suggestion = toCreate[index];
+      btn.textContent = "Creating " + (index + 1) + " of " + toCreate.length + "…";
+
+      AI.generateKaizen(suggestion.suggestedActionTaken || suggestion.title, meta)
+        .then((generated) => {
+          const kaizen = Object.assign({ createdDate: new Date().toISOString() }, meta, generated);
+          return Storage.saveKaizen(kaizen);
+        })
+        .then(() => { created++; })
+        .catch((err) => { failed++; console.error("Batch create failed for suggestion:", suggestion.title, err); })
+        .finally(() => next(index + 1));
+    }
+
+    next(0);
   }
 
   function escapeHtml(str) {
@@ -420,11 +489,14 @@
       }
       setButtonBusy(analyzeBtn, true, "Analysing…");
       document.getElementById("aiSuggestionResults").innerHTML = "";
+      document.getElementById("aiBatchBar").classList.add("d-none");
       AI.suggestKaizens(text)
         .then((suggestions) => renderSuggestions(suggestions))
         .catch((err) => showToast(err.message, "danger"))
         .finally(() => setButtonBusy(analyzeBtn, false));
     });
+
+    document.getElementById("btnCreateSelected").addEventListener("click", createSelectedKaizens);
   }
 
   // ------------------------------------------------------------------

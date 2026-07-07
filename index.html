@@ -40,6 +40,7 @@
         <li class="nav-item"><a class="nav-link" href="#" data-nav="register">Kaizen Register</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-nav="ai">AI Suggestions</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-nav="settings">Settings</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" id="navLogout">Log out</a></li>
       </ul>
     </div>
   </div>
@@ -260,6 +261,7 @@
           <input type="search" class="form-control" id="registerSearch" placeholder="Search by title, department, name or month…">
         </div>
         <div class="col-md-4 d-flex justify-content-md-end gap-2">
+          <button type="button" class="btn btn-outline-danger d-none" id="btnDeleteSelected">🗑️ Delete Selected</button>
           <button type="button" class="btn btn-outline-success d-none" id="btnExportSelected">⬇ Export Selected (0)</button>
           <button type="button" class="btn btn-outline-success w-100 w-md-auto" id="btnExportAll">⬇ Export All to Word</button>
         </div>

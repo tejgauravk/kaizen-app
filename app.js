@@ -145,13 +145,18 @@
   }
 
   /** Merges ticked colleague checkboxes into the free-typed Name(s) value, without duplicating. */
-  function combineNamesWithColleagues(freeTypedNames) {
-    const existing = freeTypedNames.split(",").map((s) => s.trim()).filter(Boolean);
-    const checked = Array.from(document.querySelectorAll("#nkColleagueCheckboxes input:checked")).map((cb) => cb.value);
-    checked.forEach((name) => {
+  /** Merges a list of checked colleague names into a free-typed name string, without duplicating. */
+  function combineNames(freeTypedNames, checkedNames) {
+    const existing = (freeTypedNames || "").split(",").map((s) => s.trim()).filter(Boolean);
+    (checkedNames || []).forEach((name) => {
       if (!existing.some((e) => e.toLowerCase() === name.toLowerCase())) existing.push(name);
     });
     return existing.join(", ");
+  }
+
+  function combineNamesWithColleagues(freeTypedNames) {
+    const checked = Array.from(document.querySelectorAll("#nkColleagueCheckboxes input:checked")).map((cb) => cb.value);
+    return combineNames(freeTypedNames, checked);
   }
 
   /** Puts a button into/out of a disabled "working" state with a temporary label. */
@@ -384,12 +389,26 @@
     suggestions.forEach((s, i) => {
       const card = document.createElement("div");
       card.className = "suggestion-card";
+      const colleagues = Settings.getColleagues();
+      const colleagueHtml = colleagues.length
+        ? '<div class="mb-2"><span class="text-muted small d-block mb-1">Colleagues involved:</span>' +
+          colleagues.map((name, j) => {
+            const id = "sugColleague" + i + "_" + j;
+            return (
+              '<div class="form-check form-check-inline">' +
+              '<input class="form-check-input suggestion-colleague" type="checkbox" value="' + escapeHtml(name) + '" id="' + id + '" data-suggestion-index="' + i + '">' +
+              '<label class="form-check-label small" for="' + id + '">' + escapeHtml(name) + "</label></div>"
+            );
+          }).join("") +
+          "</div>"
+        : "";
       card.innerHTML =
         '<div class="form-check mb-2">' +
         '<input class="form-check-input suggestion-check" type="checkbox" checked id="sugCheck' + i + '">' +
         '<label class="form-check-label fw-bold" for="sugCheck' + i + '" style="color:var(--blue-900);">' + escapeHtml(s.title || "Untitled idea") + "</label>" +
         "</div>" +
         "<p>" + escapeHtml(s.summary) + "</p>" +
+        colleagueHtml +
         '<button type="button" class="btn btn-sm btn-outline-primary">✏️ Review This One Individually</button>';
       card.querySelector("input[type=checkbox]").addEventListener("change", updateBatchBar);
       card.querySelector("button").addEventListener("click", () => {
@@ -417,12 +436,10 @@
   function createSelectedKaizens() {
     const checkedIndexes = Array.from(document.querySelectorAll("#aiSuggestionResults .suggestion-check:checked"))
       .map((cb) => Number(cb.id.replace("sugCheck", "")));
-    const toCreate = checkedIndexes.map((i) => currentSuggestions[i]);
-    if (toCreate.length === 0) return;
+    if (checkedIndexes.length === 0) return;
 
     const defaults = Settings.getDefaults();
-    const meta = {
-      name: defaults.name || "",
+    const sharedMeta = {
       department: defaults.department || "",
       month: currentMonthLabel(),
       depot: defaults.depot || "",
@@ -433,19 +450,25 @@
     let created = 0;
     let failed = 0;
 
-    function next(index) {
-      if (index >= toCreate.length) {
+    function next(pos) {
+      if (pos >= checkedIndexes.length) {
         btn.disabled = false;
         showToast(
-          "Created " + created + " of " + toCreate.length + " Kaizens." + (failed ? " " + failed + " failed — check the Register." : ""),
+          "Created " + created + " of " + checkedIndexes.length + " Kaizens." + (failed ? " " + failed + " failed — check the Register." : ""),
           failed ? "warning" : "success"
         );
         showPage("register");
         return;
       }
 
-      const suggestion = toCreate[index];
-      btn.textContent = "Creating " + (index + 1) + " of " + toCreate.length + "…";
+      const originalIndex = checkedIndexes[pos];
+      const suggestion = currentSuggestions[originalIndex];
+      const checkedColleagues = Array.from(
+        document.querySelectorAll('.suggestion-colleague[data-suggestion-index="' + originalIndex + '"]:checked')
+      ).map((cb) => cb.value);
+      const meta = Object.assign({}, sharedMeta, { name: combineNames(defaults.name || "", checkedColleagues) });
+
+      btn.textContent = "Creating " + (pos + 1) + " of " + checkedIndexes.length + "…";
 
       AI.generateKaizen(suggestion.suggestedActionTaken || suggestion.title, meta)
         .then((generated) => {
@@ -459,7 +482,7 @@
         })
         .then(() => { created++; })
         .catch((err) => { failed++; console.error("Batch create failed for suggestion:", suggestion.title, err); })
-        .finally(() => next(index + 1));
+        .finally(() => next(pos + 1));
     }
 
     next(0);
@@ -525,6 +548,13 @@
     wireSettingsForm();
     wireAiSuggestionCentre();
     registerServiceWorker();
+
+    document.getElementById("navLogout").addEventListener("click", (e) => {
+      e.preventDefault();
+      fetch("/api/logout", { method: "POST" }).finally(() => {
+        window.location.href = "/login.html";
+      });
+    });
 
     Storage.init()
       .then(() => Settings.load())

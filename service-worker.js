@@ -15,11 +15,12 @@
    file is added), so the old cache gets cleaned up.
    ========================================================================= */
 
-const CACHE_VERSION = "kaizen-v4";
+const CACHE_VERSION = "kaizen-v5";
 
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./login.html",
   "./style.css",
   "./app.js",
   "./storage.js",

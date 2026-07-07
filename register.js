@@ -58,7 +58,7 @@ const Register = (function () {
         );
     renderRows(filtered, query);
     updateSelectAllState(filtered);
-    updateExportSelectedButton();
+    updateSelectionButtons();
   }
 
   function renderRows(list, query) {
@@ -153,13 +153,17 @@ const Register = (function () {
     selectAll.indeterminate = selectedCount > 0 && selectedCount < visibleList.length;
   }
 
-  function updateExportSelectedButton() {
-    const btn = document.getElementById("btnExportSelected");
+  function updateSelectionButtons() {
+    const exportBtn = document.getElementById("btnExportSelected");
+    const deleteBtn = document.getElementById("btnDeleteSelected");
     if (selectedIds.size === 0) {
-      btn.classList.add("d-none");
+      exportBtn.classList.add("d-none");
+      deleteBtn.classList.add("d-none");
     } else {
-      btn.classList.remove("d-none");
-      btn.textContent = "⬇ Export Selected (" + selectedIds.size + ")";
+      exportBtn.classList.remove("d-none");
+      exportBtn.textContent = "⬇ Export Selected (" + selectedIds.size + ")";
+      deleteBtn.classList.remove("d-none");
+      deleteBtn.textContent = "🗑️ Delete Selected (" + selectedIds.size + ")";
     }
   }
 
@@ -167,7 +171,7 @@ const Register = (function () {
     if (checked) selectedIds.add(id);
     else selectedIds.delete(id);
     updateSelectAllState(currentlyFiltered());
-    updateExportSelectedButton();
+    updateSelectionButtons();
   }
 
   function toggleSelectAll(checked) {
@@ -236,6 +240,37 @@ const Register = (function () {
     Export.exportKaizensToWord(chosen, "Kaizen_Selected_" + new Date().toISOString().slice(0, 10) + ".docx");
   }
 
+  function deleteSelected() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    const label = ids.length === 1 ? "this 1 Kaizen" : "these " + ids.length + " Kaizens";
+    if (!window.confirm("Delete " + label + "? This cannot be undone.")) return;
+
+    const btn = document.getElementById("btnDeleteSelected");
+    btn.disabled = true;
+    let deleted = 0;
+    let failed = 0;
+
+    function next(pos) {
+      if (pos >= ids.length) {
+        btn.disabled = false;
+        selectedIds.clear();
+        window.showToast(
+          "Deleted " + deleted + " of " + ids.length + " Kaizens." + (failed ? " " + failed + " failed." : ""),
+          failed ? "warning" : "success"
+        );
+        render();
+        return;
+      }
+      Storage.deleteKaizen(ids[pos])
+        .then(() => { deleted++; })
+        .catch((err) => { failed++; console.error("Delete failed for id", ids[pos], err); })
+        .finally(() => next(pos + 1));
+    }
+
+    next(0);
+  }
+
   // ---------------------------- Wiring ----------------------------
 
   function handleTableClick(e) {
@@ -269,6 +304,7 @@ const Register = (function () {
       Export.exportKaizensToWord(allKaizens.slice().sort((a, b) => a.id - b.id));
     });
     document.getElementById("btnExportSelected").addEventListener("click", exportSelected);
+    document.getElementById("btnDeleteSelected").addEventListener("click", deleteSelected);
   });
 
   return {

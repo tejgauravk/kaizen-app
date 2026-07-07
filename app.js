@@ -449,7 +449,12 @@
 
       AI.generateKaizen(suggestion.suggestedActionTaken || suggestion.title, meta)
         .then((generated) => {
-          const kaizen = Object.assign({ createdDate: new Date().toISOString() }, meta, generated);
+          const kaizen = Object.assign(
+            { createdDate: new Date().toISOString() },
+            meta,
+            generated,
+            { actionTaken: generated.improvedActionTaken || suggestion.suggestedActionTaken || suggestion.title || "" }
+          );
           return Storage.saveKaizen(kaizen);
         })
         .then(() => { created++; })

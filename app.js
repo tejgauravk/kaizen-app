@@ -552,7 +552,7 @@
     document.getElementById("navLogout").addEventListener("click", (e) => {
       e.preventDefault();
       fetch("/api/logout", { method: "POST" }).finally(() => {
-        window.location.href = "/login.html";
+        window.location.href = "/login";
       });
     });
 

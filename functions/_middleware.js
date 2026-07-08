@@ -15,7 +15,11 @@ const COOKIE_NAME = "kaizen_session";
 
 // Paths that must stay reachable without being logged in yet — the login
 // page itself, its two API calls, and the styling it needs to render.
-const PUBLIC_PATHS = ["/login.html", "/api/login", "/api/logout", "/style.css", "/manifest.json"];
+// Cloudflare Pages automatically serves clean URLs (redirects /login.html
+// -> /login), so both forms need to be listed here — otherwise that
+// automatic redirect fights with this middleware's own redirect and loops
+// forever ("too many redirects").
+const PUBLIC_PATHS = ["/login", "/login.html", "/api/login", "/api/logout", "/style.css", "/manifest.json"];
 
 export async function onRequest(context) {
   const { request, next, env } = context;
@@ -42,5 +46,5 @@ export async function onRequest(context) {
     });
   }
 
-  return Response.redirect(new URL("/login.html", request.url).toString(), 302);
+  return Response.redirect(new URL("/login", request.url).toString(), 302);
 }

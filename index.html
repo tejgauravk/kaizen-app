@@ -36,6 +36,7 @@
     <div class="collapse navbar-collapse" id="appNav">
       <ul class="navbar-nav ms-auto">
         <li class="nav-item"><a class="nav-link" href="#" data-nav="home">Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#" data-nav="dashboard">Dashboard</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-nav="new-kaizen">New Kaizen</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-nav="register">Kaizen Register</a></li>
         <li class="nav-item"><a class="nav-link" href="#" data-nav="ai">AI Suggestions</a></li>
@@ -86,6 +87,48 @@
           <span class="home-card-title">Settings</span>
           <span class="home-card-desc">Set your default details</span>
         </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= DASHBOARD ========================= -->
+  <section id="page-dashboard" class="app-page d-none">
+    <div class="page-header">
+      <h1>Dashboard</h1>
+      <p class="text-muted">A quick view of how many Kaizens you've logged, and who's been involved.</p>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-6 col-md-3">
+        <div class="panel-card text-center py-4" style="margin-top:0;">
+          <div class="display-6 fw-bold" style="color:var(--blue-700);" id="dashTotalCount">0</div>
+          <div class="text-muted small">Total Kaizens</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="panel-card text-center py-4" style="margin-top:0;">
+          <div class="display-6 fw-bold" style="color:var(--blue-700);" id="dashSoloCount">0</div>
+          <div class="text-muted small">Solo (just you)</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="panel-card text-center py-4" style="margin-top:0;">
+          <div class="display-6 fw-bold" style="color:var(--blue-700);" id="dashCollabCount">0</div>
+          <div class="text-muted small">With a colleague</div>
+        </div>
+      </div>
+      <div class="col-6 col-md-3">
+        <div class="panel-card text-center py-4" style="margin-top:0;">
+          <div class="display-6 fw-bold" style="color:var(--blue-700);" id="dashMonthCount">0</div>
+          <div class="text-muted small" id="dashMonthLabel">This month</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-card">
+      <h2 class="h6 fw-bold mb-3">Kaizens per colleague</h2>
+      <div id="dashColleagueBreakdown">
+        <!-- populated by dashboard.js -->
       </div>
     </div>
   </section>
@@ -434,6 +477,7 @@
 <script src="register.js"></script>
 <script src="ai.js"></script>
 <script src="export.js"></script>
+<script src="dashboard.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

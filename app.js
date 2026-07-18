@@ -13,7 +13,7 @@
 (function () {
   "use strict";
 
-  const PAGES = ["home", "new-kaizen", "edit-kaizen", "register", "ai", "settings"];
+  const PAGES = ["home", "dashboard", "new-kaizen", "edit-kaizen", "register", "ai", "settings"];
 
   /** Holds the Kaizen currently open in the Edit screen (draft or saved). */
   let currentKaizen = null;
@@ -36,6 +36,9 @@
 
     if (pageId === "register") {
       Register.render();
+    }
+    if (pageId === "dashboard") {
+      Dashboard.render();
     }
     if (pageId === "settings") {
       Settings.populateForm();

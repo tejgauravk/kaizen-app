@@ -157,14 +157,18 @@ const Register = (function () {
   function updateSelectionButtons() {
     const exportBtn = document.getElementById("btnExportSelected");
     const deleteBtn = document.getElementById("btnDeleteSelected");
+    const emailBtn = document.getElementById("btnEmailSelected");
     if (selectedIds.size === 0) {
       exportBtn.classList.add("d-none");
       deleteBtn.classList.add("d-none");
+      emailBtn.classList.add("d-none");
     } else {
       exportBtn.classList.remove("d-none");
       exportBtn.textContent = "⬇ Export Selected (" + selectedIds.size + ")";
       deleteBtn.classList.remove("d-none");
       deleteBtn.textContent = "🗑️ Delete Selected (" + selectedIds.size + ")";
+      emailBtn.classList.remove("d-none");
+      emailBtn.textContent = "✉️ Email Selected (" + selectedIds.size + ")";
     }
   }
 
@@ -248,6 +252,14 @@ const Register = (function () {
     Export.exportKaizensToWord(chosen, "Kaizen_Selected_" + new Date().toISOString().slice(0, 10) + ".docx");
   }
 
+  function emailSelected() {
+    const chosen = allKaizens
+      .filter((k) => selectedIds.has(k.id))
+      .sort((a, b) => a.id - b.id);
+    if (chosen.length === 0) return;
+    window.App.openEmailModal(chosen);
+  }
+
   function deleteSelected() {
     const ids = Array.from(selectedIds);
     if (ids.length === 0) return;
@@ -313,6 +325,7 @@ const Register = (function () {
       Export.exportKaizensToWord(allKaizens.slice().sort((a, b) => a.id - b.id));
     });
     document.getElementById("btnExportSelected").addEventListener("click", exportSelected);
+    document.getElementById("btnEmailSelected").addEventListener("click", emailSelected);
     document.getElementById("btnDeleteSelected").addEventListener("click", deleteSelected);
   });
 

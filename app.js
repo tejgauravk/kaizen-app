@@ -330,6 +330,54 @@
     document.getElementById("btnPrintKaizen").addEventListener("click", () => {
       window.print();
     });
+
+    document.getElementById("btnEmailKaizen").addEventListener("click", () => {
+      openEmailModal(readKaizenFromEditForm());
+    });
+  }
+
+  // ------------------------------------------------------------------
+  // Email This Kaizen — downloads the .docx and opens a pre-filled mailto
+  // link, plus records the attempt in the shared email log. Free, no
+  // account needed; true auto-attach requires a real email API + a domain
+  // the person owns, so this is the practical version until then.
+  // ------------------------------------------------------------------
+
+  let pendingEmailKaizen = null;
+
+  function openEmailModal(kaizen) {
+    pendingEmailKaizen = kaizen;
+    document.getElementById("emailRecipient").value = "";
+    new bootstrap.Modal(document.getElementById("emailModal")).show();
+  }
+
+  function wireEmailModal() {
+    document.getElementById("btnConfirmEmail").addEventListener("click", () => {
+      const recipient = document.getElementById("emailRecipient").value.trim();
+      if (!recipient) {
+        showToast("Enter a recipient email address first.", "warning");
+        return;
+      }
+      if (!pendingEmailKaizen) return;
+
+      Export.exportKaizenToWord(pendingEmailKaizen);
+
+      Storage.logEmail({
+        kaizenId: pendingEmailKaizen.id || null,
+        kaizenTitle: pendingEmailKaizen.title || "",
+        recipient: recipient,
+      }).catch((err) => console.error("Could not record email log:", err));
+
+      const subject = encodeURIComponent("Kaizen: " + (pendingEmailKaizen.title || "Untitled"));
+      const body = encodeURIComponent(
+        "Hi,\n\nPlease find the attached Kaizen record: " + (pendingEmailKaizen.title || "") + ".\n\n" +
+        "(The Word file just downloaded to your computer — attach it here before sending.)\n\nThanks."
+      );
+      window.location.href = "mailto:" + encodeURIComponent(recipient) + "?subject=" + subject + "&body=" + body;
+
+      bootstrap.Modal.getInstance(document.getElementById("emailModal")).hide();
+      showToast("File downloading — attach it in the email window that just opened.", "info");
+    });
   }
 
   // ------------------------------------------------------------------
@@ -548,6 +596,7 @@
     wireNavigation();
     wireNewKaizenForm();
     wireEditKaizenButtons();
+    wireEmailModal();
     wireSettingsForm();
     wireAiSuggestionCentre();
     registerServiceWorker();
@@ -572,5 +621,6 @@
   // Small surface other modules (register.js) call into.
   window.App = {
     openKaizenForEdit: openKaizenForEdit,
+    openEmailModal: openEmailModal,
   };
 })();

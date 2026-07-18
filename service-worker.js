@@ -15,7 +15,7 @@
    file is added), so the old cache gets cleaned up.
    ========================================================================= */
 
-const CACHE_VERSION = "kaizen-v6";
+const CACHE_VERSION = "kaizen-v7";
 
 const APP_SHELL = [
   "./",
@@ -29,6 +29,7 @@ const APP_SHELL = [
   "./register.js",
   "./ai.js",
   "./export.js",
+  "./dashboard.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

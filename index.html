@@ -313,6 +313,7 @@
         </div>
         <div class="col-md-4 d-flex justify-content-md-end gap-2">
           <button type="button" class="btn btn-outline-danger d-none" id="btnDeleteSelected">🗑️ Delete Selected</button>
+          <button type="button" class="btn btn-outline-primary d-none" id="btnEmailSelected">✉️ Email Selected</button>
           <button type="button" class="btn btn-outline-success d-none" id="btnExportSelected">⬇ Export Selected (0)</button>
           <button type="button" class="btn btn-outline-success w-100 w-md-auto" id="btnExportAll">⬇ Export All to Word</button>
         </div>
@@ -496,7 +497,7 @@
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
       <div class="modal-body">
-        <p class="text-muted small">
+        <p class="text-muted small" id="emailModalIntro">
           This downloads the Word file and opens your email app with the recipient and subject already filled in —
           just attach the file that downloads and hit send.
         </p>

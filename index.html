@@ -131,6 +131,13 @@
         <!-- populated by dashboard.js -->
       </div>
     </div>
+
+    <div class="panel-card">
+      <h2 class="h6 fw-bold mb-3">Recently Emailed</h2>
+      <div id="dashEmailLog">
+        <!-- populated by dashboard.js -->
+      </div>
+    </div>
   </section>
 
   <!-- ========================= NEW KAIZEN ========================= -->
@@ -199,6 +206,7 @@
         <button type="button" class="btn btn-outline-primary" id="btnImproveAI">🤖 Improve with AI</button>
         <button type="button" class="btn btn-app-primary" id="btnSaveKaizen">💾 Save</button>
         <button type="button" class="btn btn-outline-success" id="btnExportWord">⬇ Export to Word</button>
+        <button type="button" class="btn btn-outline-primary" id="btnEmailKaizen">✉️ Email</button>
         <button type="button" class="btn btn-outline-secondary" id="btnPrintKaizen">🖨 Print</button>
       </div>
     </div>
@@ -479,5 +487,29 @@
 <script src="export.js"></script>
 <script src="dashboard.js"></script>
 <script src="app.js"></script>
+<!-- Email This Kaizen modal -->
+<div class="modal fade" id="emailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Email This Kaizen</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted small">
+          This downloads the Word file and opens your email app with the recipient and subject already filled in —
+          just attach the file that downloads and hit send.
+        </p>
+        <label class="form-label" for="emailRecipient">Recipient's email address</label>
+        <input type="email" class="form-control" id="emailRecipient" placeholder="name@example.com" required>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-app-primary" id="btnConfirmEmail">Download &amp; Open Email</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>

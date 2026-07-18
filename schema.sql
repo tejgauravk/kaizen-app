@@ -24,3 +24,11 @@ CREATE TABLE IF NOT EXISTS settings (
   key TEXT PRIMARY KEY,
   value TEXT            -- JSON blob of the whole settings object
 );
+
+CREATE TABLE IF NOT EXISTS email_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  kaizen_id INTEGER,
+  kaizen_title TEXT,
+  recipient TEXT,
+  sent_at TEXT
+);

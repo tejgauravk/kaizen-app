@@ -209,6 +209,49 @@ body {
   line-height: 1;
 }
 
+.dash-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.dash-bar-name {
+  width: 140px;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-600);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-bar-track {
+  flex: 1;
+  background: var(--blue-50);
+  border-radius: 999px;
+  height: 18px;
+  overflow: hidden;
+}
+
+.dash-bar-fill {
+  background: linear-gradient(90deg, var(--blue-500), var(--blue-700));
+  height: 100%;
+  border-radius: 999px;
+  min-width: 4px;
+  transition: width 0.3s ease;
+}
+
+.dash-bar-count {
+  width: 28px;
+  flex-shrink: 0;
+  text-align: right;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--blue-900);
+}
+
 .form-control:focus, .form-select:focus {
   border-color: var(--blue-500);
   box-shadow: 0 0 0 0.2rem rgba(28, 123, 209, 0.15);

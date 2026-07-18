@@ -102,6 +102,7 @@ const Register = (function () {
       actionButton("edit", "✏️", "Edit") +
       actionButton("duplicate", "📄", "Duplicate") +
       actionButton("export", "⬇️", "Export") +
+      actionButton("email", "✉️", "Email") +
       actionButton("print", "🖨️", "Print") +
       actionButton("delete", "🗑️", "Delete", "text-danger") +
       "</td>";
@@ -223,6 +224,13 @@ const Register = (function () {
     });
   }
 
+  function emailRow(id) {
+    Storage.getKaizen(id).then((k) => {
+      if (!k) return window.showToast("That Kaizen no longer exists.", "warning");
+      window.App.openEmailModal(k);
+    });
+  }
+
   function printRow(id) {
     Storage.getKaizen(id).then((k) => {
       if (!k) return;
@@ -292,6 +300,7 @@ const Register = (function () {
       case "duplicate": return duplicateRow(id);
       case "delete": return deleteRow(id);
       case "export": return exportRow(id);
+      case "email": return emailRow(id);
       case "print": return printRow(id);
     }
   }

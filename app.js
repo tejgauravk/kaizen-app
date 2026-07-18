@@ -343,11 +343,17 @@
   // the person owns, so this is the practical version until then.
   // ------------------------------------------------------------------
 
-  let pendingEmailKaizen = null;
+  let pendingEmailKaizens = [];
 
-  function openEmailModal(kaizen) {
-    pendingEmailKaizen = kaizen;
+  /** Accepts either a single Kaizen object or an array of them. */
+  function openEmailModal(kaizenOrArray) {
+    pendingEmailKaizens = Array.isArray(kaizenOrArray) ? kaizenOrArray : [kaizenOrArray];
     document.getElementById("emailRecipient").value = "";
+    const intro = document.getElementById("emailModalIntro");
+    intro.textContent =
+      pendingEmailKaizens.length > 1
+        ? "This downloads all " + pendingEmailKaizens.length + " selected Kaizens as one Word file and opens your email app with the recipient and subject already filled in — just attach the file that downloads and hit send."
+        : "This downloads the Word file and opens your email app with the recipient and subject already filled in — just attach the file that downloads and hit send.";
     new bootstrap.Modal(document.getElementById("emailModal")).show();
   }
 
@@ -358,19 +364,28 @@
         showToast("Enter a recipient email address first.", "warning");
         return;
       }
-      if (!pendingEmailKaizen) return;
+      if (pendingEmailKaizens.length === 0) return;
 
-      Export.exportKaizenToWord(pendingEmailKaizen);
+      const multiple = pendingEmailKaizens.length > 1;
+      if (multiple) {
+        Export.exportKaizensToWord(pendingEmailKaizens, "Kaizen_Selected_" + new Date().toISOString().slice(0, 10) + ".docx");
+      } else {
+        Export.exportKaizenToWord(pendingEmailKaizens[0]);
+      }
 
-      Storage.logEmail({
-        kaizenId: pendingEmailKaizen.id || null,
-        kaizenTitle: pendingEmailKaizen.title || "",
-        recipient: recipient,
-      }).catch((err) => console.error("Could not record email log:", err));
+      pendingEmailKaizens.forEach((k) => {
+        Storage.logEmail({
+          kaizenId: k.id || null,
+          kaizenTitle: k.title || "",
+          recipient: recipient,
+        }).catch((err) => console.error("Could not record email log:", err));
+      });
 
-      const subject = encodeURIComponent("Kaizen: " + (pendingEmailKaizen.title || "Untitled"));
+      const subject = encodeURIComponent(
+        multiple ? pendingEmailKaizens.length + " Kaizens attached" : "Kaizen: " + (pendingEmailKaizens[0].title || "Untitled")
+      );
       const body = encodeURIComponent(
-        "Hi,\n\nPlease find the attached Kaizen record: " + (pendingEmailKaizen.title || "") + ".\n\n" +
+        "Hi,\n\nPlease find the attached " + (multiple ? "Kaizen records (" + pendingEmailKaizens.length + " total)" : "Kaizen record: " + (pendingEmailKaizens[0].title || "")) + ".\n\n" +
         "(The Word file just downloaded to your computer — attach it here before sending.)\n\nThanks."
       );
       window.location.href = "mailto:" + encodeURIComponent(recipient) + "?subject=" + subject + "&body=" + body;

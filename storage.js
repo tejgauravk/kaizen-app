@@ -79,6 +79,20 @@ const Storage = (function () {
     return fetch("/api/settings").then((res) => handleResponse(res, "Could not load settings"));
   }
 
+  // ---------------------------- Email log ----------------------------
+
+  function logEmail(entry) {
+    return fetch("/api/email-log", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(entry),
+    }).then((res) => handleResponse(res, "Could not record the email log"));
+  }
+
+  function getEmailLog() {
+    return fetch("/api/email-log").then((res) => handleResponse(res, "Could not load the email log"));
+  }
+
   return {
     init: init,
     saveKaizen: saveKaizen,
@@ -87,5 +101,7 @@ const Storage = (function () {
     deleteKaizen: deleteKaizen,
     saveSettings: saveSettings,
     getSettings: getSettings,
+    logEmail: logEmail,
+    getEmailLog: getEmailLog,
   };
 })();

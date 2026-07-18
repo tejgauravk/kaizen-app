@@ -22,8 +22,8 @@ const Dashboard = (function () {
   }
 
   function render() {
-    return Storage.getAllKaizens()
-      .then((kaizens) => {
+    return Promise.all([Storage.getAllKaizens(), Storage.getEmailLog().catch(() => [])])
+      .then(([kaizens, emailLog]) => {
         const colleagues = Settings.getColleagues();
         const now = new Date();
 
@@ -58,6 +58,7 @@ const Dashboard = (function () {
           "In " + now.toLocaleDateString("en-US", { month: "long" });
 
         renderColleagueBreakdown(Object.values(perColleague));
+        renderEmailLog(emailLog);
       })
       .catch((err) => {
         window.showToast(err.message, "danger");
@@ -86,6 +87,34 @@ const Dashboard = (function () {
         '<div class="dash-bar-count">' + r.count + "</div>";
       host.appendChild(row);
     });
+  }
+
+  function renderEmailLog(entries) {
+    const host = document.getElementById("dashEmailLog");
+    host.innerHTML = "";
+
+    if (!entries || entries.length === 0) {
+      host.innerHTML = '<div class="text-muted small">No Kaizens have been emailed yet.</div>';
+      return;
+    }
+
+    entries.slice(0, 10).forEach((e) => {
+      const row = document.createElement("div");
+      row.className = "small mb-2 pb-2";
+      row.style.borderBottom = "1px solid var(--border)";
+      row.innerHTML =
+        "<strong>" + escapeHtml(e.kaizen_title || "Untitled") + "</strong> → " +
+        escapeHtml(e.recipient || "") +
+        ' <span class="text-muted">(' + formatDate(e.sent_at) + ")</span>";
+      host.appendChild(row);
+    });
+  }
+
+  function formatDate(iso) {
+    if (!iso) return "—";
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   }
 
   function escapeHtml(str) {
